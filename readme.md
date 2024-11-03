@@ -5,7 +5,7 @@ This project implements a simple parser for SELECT SQL queries in the Rust progr
 ## Functionality
 * **SELECT Query Parsing**: Support for basic SELECT query syntax with column and table specification.
 * **WHERE Conditions Support**: Ability to parse simple filter conditions using comparison operators.
-* **JOINs Support**: Ability to parse different types of joins.
+* **ORDER BY Support**: Ability to parse sorting conditions to order the results based on specified columns.
 * **Abstract Syntax Tree (AST) Construction**: Structuring parsed queries as a data structure for further processing.
 * **Error Handling**: Output informative messages in case of parsing errors.
 
