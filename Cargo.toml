@@ -2,5 +2,12 @@
 name = "sql_select_parser"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "This project implements a simple parser for SELECT SQL queries in the Rust programming language using the Pest library. The parser is capable of analyzing basic SELECT queries, extracting information about selected columns, table, filtering conditions (WHERE), and sorting conditions (ORDER BY)."
 
 [dependencies]
+anyhow = "1.0.92"
+clap = "4.5.20"
+pest = "2.7.14"
+pest_derive = "2.7.14"
+thiserror = "1.0.66"
