@@ -1,0 +1,35 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+SELECT = { "select" }
+FROM = { "from" }
+WHERE = { "where" }
+
+case_insensitive(str) = { $(str.chars().map(|c| c.to_ascii_lowercase()).collect::<String>()) }
+
+identifier = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+number = @{ "-"? ~ ASCII_DIGIT+ }
+
+string = @{ "'" ~ (!"'" ~ ANY)* ~ "'" }
+
+boolean = @{ "true" | "false" }
+
+operator = @{ "!=" | ">=" | "<=" | "<" | ">" | "=" }
+
+function_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+table = { identifier | "(" ~ select_query ~ ")" }
+
+select_query = { SELECT ~ select_list ~ FROM ~ table ~ where_clause? }
+
+select_list = { "*" | select_item ~ ("," ~ select_item)* }
+
+select_item = { function_call | identifier }
+
+function_call = { function_name ~ "(" ~ identifier ~ ")" }
+
+where_clause = { WHERE ~ condition }
+
+condition = { identifier ~ operator ~ value }
+
+value = { string | number | boolean }
