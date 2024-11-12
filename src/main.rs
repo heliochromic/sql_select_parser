@@ -41,11 +41,7 @@ fn main() {
 
 fn handle_parse_command(file: &PathBuf) -> Result<(), ParseError> {
     let content = fs::read_to_string(file).map_err(|e| {
-        ParseError::ParsingError(format!(
-            "Failed to read file {}: {}",
-            file.display(),
-            e
-        ))
+        ParseError::ParsingError(format!("Failed to read file {}: {}", file.display(), e))
     })?;
 
     match parse_query(&content) {

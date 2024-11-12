@@ -86,3 +86,42 @@ SelectQuery {
     ),
 }
 ```
+
+## Grammar
+```
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+SELECT = { "select" }
+FROM = { "from" }
+WHERE = { "where" }
+
+identifier = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+number = @{ "-"? ~ ASCII_DIGIT+ }
+
+string = @{ "'" ~ (!"'" ~ ANY)* ~ "'" }
+
+boolean = @{ "true" | "false" }
+
+operator = @{ "!=" | ">=" | "<=" | "<" | ">" | "=" }
+
+function_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+table = { identifier | "(" ~ select_query ~ ")" }
+
+select_query = { SELECT ~ select_list ~ FROM ~ table ~ where_clause? }
+
+select_list = { select_item ~ ("," ~ select_item)* }
+
+star = { "*" }
+
+select_item = { function_call | identifier | star }
+
+function_call = { function_name ~ "(" ~ ("*" | select_item ~ ("," ~ select_item)*)? ~ ")" }
+
+where_clause = { WHERE ~ condition }
+
+condition = { identifier ~ operator ~ value }
+
+value = { string | number | boolean }
+```

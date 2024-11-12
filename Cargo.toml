@@ -1,5 +1,5 @@
 [package]
-name = "Parser of simple SQL queries on Rust using Pest"
+name = "sql_select_parser"
 authors = ["Bohdan Prokhorov <howchromium@gmai.com>"]
 version = "0.1.0"
 edition = "2021"
