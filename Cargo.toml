@@ -7,7 +7,7 @@ description = "This project implements a simple parser for SELECT SQL queries in
 
 [dependencies]
 anyhow = "1.0.92"
-clap = "4.5.20"
+clap = { version = "4.5.20", features = ["derive"] }
 pest = "2.7.14"
 pest_derive = "2.7.14"
 thiserror = "1.0.66"
