@@ -1,6 +1,6 @@
 [package]
 name = "sql_select_parser"
-authors = ["Bohdan Prokhorov <howchromium@gmai.com>"]
+authors = ["Bohdan Prokhorov <howchromium@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
