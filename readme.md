@@ -1,34 +1,88 @@
-# Parser of SQL queries on Rust using Pest
-## Description of the Project
-This project implements a simple parser for SELECT SQL queries in the Rust programming language using the Pest library. The parser is capable of analyzing basic SELECT queries, extracting information about selected columns, table, filtering conditions (WHERE), and sorting conditions (ORDER BY).
+# sql_select_parser
+## Overview
+The SQL Parser CLI is a command-line tool designed to parse and analyze SQL SELECT queries. Built with Rust, it leverages the pest parser generator to interpret SQL syntax and provides a structured Abstract Syntax Tree (AST) representation of the parsed queries. This tool is ideal for developers and database administrators who need to validate, analyze, or transform SQL queries programmatically.
 
-## Functionality
-* **SELECT Query Parsing**: Support for basic SELECT query syntax with column and table specification.
-* **WHERE Conditions Support**: Ability to parse simple filter conditions using comparison operators.
-* **Abstract Syntax Tree (AST) Construction**: Structuring parsed queries as a data structure for further processing.
-* **Error Handling**: Output informative messages in case of parsing errors.
+## Features
+* Parse SQL SELECT Queries: Supports parsing of standard SELECT statements, including various clauses and functions.
+* Abstract Syntax Tree (AST) Generation: Transforms SQL queries into a structured AST for easy analysis and manipulation.
+* Command-Line Interface: User-friendly CLI built with clap for seamless integration into development workflows.
+* Automated Tasks with Makefile: Simplifies common tasks like building, testing, formatting, and linting through a comprehensive Makefile.
+* Error Handling: Provides detailed error messages to help identify and resolve syntax issues in SQL queries.
+
+## Description
+* SelectQuery:
+
+    * columns: A list of SelectItem representing the columns or functions selected.
+    * table: Represents the source table, which can be a simple table or a subquery.
+    * where_clause: An optional Condition for filtering results.
+* SelectItem:
+
+    * Column: Represents a column identifier.
+    * Function: Represents a function call with a name and a list of arguments, which are themselves SelectItems.
+* Table:
+
+    * Simple: A simple table identifier.
+    * Subquery: A nested SelectQuery acting as a table source.
+* Condition:
+
+    * left: The left operand (column name).
+    * operator: The comparison operator.
+    * right: The right operand (Value), which can be a number, string, or boolean.
+* Value:
+
+    * Number: An integer value.
+    * String: A string literal.
+    * Boolean: A boolean value (true or false).
 
 ## Installation
+Clone repository and make sure that all dependecies installed properly 
+```unix
+git clone https://github.com/yourusername/sql_parser_cli.git
+cd sql_parser_cli
+```
 
-Add following dependecies to your Rust project
-```toml
-[dependencies]
+```unix
 anyhow = "1.0.92"
-clap = "4.5.20"
+clap = { version = "4.5.20", features = ["derive"] }
 pest = "2.7.14"
 pest_derive = "2.7.14"
 thiserror = "1.0.66"
 ```
-
-Clone project
-
+Run demo
 ```unix
-git clone https://github.com/your_username/sql_parser.git
-cd sql_parser
+make example
 ```
 
-Build project
-
-```unix
-cargo build
+## Example
+Input
+```sql
+select id, name, email from users where active = true;
+```
+Output
+```rust
+SelectQuery {
+    columns: [
+        Column(
+            "id",
+        ),
+        Column(
+            "name",
+        ),
+        Column(
+            "email",
+        ),
+    ],
+    table: Simple(
+        "users",
+    ),
+    where_clause: Some(
+        Condition {
+            left: "active",
+            operator: "=",
+            right: Boolean(
+                true,
+            ),
+        },
+    ),
+}
 ```

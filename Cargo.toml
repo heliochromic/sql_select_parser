@@ -1,8 +1,10 @@
 [package]
-name = "sql_select_parser"
+name = "Parser of simple SQL queries on Rust using Pest"
+authors = ["Bohdan Prokhorov <howchromium@gmai.com>"]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/heliochromic/sql_select_parser"
 description = "This project implements a simple parser for SELECT SQL queries in the Rust programming language using the Pest library. The parser is capable of analyzing basic SELECT queries, extracting information about selected columns, table, filtering conditions (WHERE), and sorting conditions (ORDER BY)."
 
 [dependencies]

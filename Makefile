@@ -7,7 +7,9 @@ test:
 format:
 	cargo fmt --all
 lint:
-	cargo clippy -- -D warnings
+	cargo clippy -- -D 
+run:
+	cargo run
 example:
 	cargo run -- parse --file queries/sample.sql
 doc:
