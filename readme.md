@@ -1,4 +1,7 @@
 # sql_select_parser
+
+[Link to creates.io](https://crates.io/crates/sql_select_parser)
+
 ## Overview
 The SQL Parser CLI is a command-line tool designed to parse and analyze SQL SELECT queries. Built with Rust, it leverages the pest parser generator to interpret SQL syntax and provides a structured Abstract Syntax Tree (AST) representation of the parsed queries. This tool is ideal for developers and database administrators who need to validate, analyze, or transform SQL queries programmatically.
 
