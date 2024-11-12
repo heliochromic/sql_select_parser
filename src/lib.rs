@@ -1,7 +1,7 @@
-use anyhow::{anyhow, Error};
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
+use thiserror::Error;
 
 #[derive(Parser)]
 #[grammar = "./sql.pest"]
@@ -31,7 +31,10 @@ pub struct Condition {
 #[derive(Debug)]
 pub enum SelectItem {
     Column(String),
-    Function { name: String, argument: String },
+    Function {
+        name: String,
+        arguments: Vec<SelectItem>,
+    },
 }
 
 #[derive(Debug)]
@@ -40,15 +43,69 @@ pub enum Table {
     Subquery(Box<SelectQuery>),
 }
 
-pub fn parse_query(input: &str) -> Result<SelectQuery, Error> {
-    let mut pairs =
-        SQLParser::parse(Rule::select_query, input).map_err(|e| anyhow!("Parsing error: {}", e))?;
-    let pair = pairs.next().ok_or_else(|| anyhow!("No query found"))?;
+#[derive(Debug, Error)]
+pub enum ParseError {
+    #[error("Parsing error: {0}")]
+    ParsingError(String),
+
+    #[error("No query found")]
+    NoQueryFound,
+
+    #[error("Table not specified")]
+    TableNotSpecified,
+
+    #[error("Unexpected rule in select_list")]
+    UnexpectedRuleInSelectList,
+
+    #[error("Unexpected rule in select_item")]
+    UnexpectedRuleInSelectItem,
+
+    #[error("Missing select item")]
+    MissingSelectItem,
+
+    #[error("Missing table name")]
+    MissingTableName,
+
+    #[error("Unexpected rule in table")]
+    UnexpectedRuleInTable,
+
+    #[error("No condition found in WHERE clause")]
+    NoConditionInWhereClause,
+
+    #[error("Missing left operand in condition")]
+    MissingLeftOperand,
+
+    #[error("Missing operator in condition")]
+    MissingOperator,
+
+    #[error("Missing right operand in condition")]
+    MissingRightOperand,
+
+    #[error("Invalid number: {0}")]
+    InvalidNumber(#[from] std::num::ParseIntError),
+
+    #[error("Unexpected rule in value")]
+    UnexpectedRuleInValue,
+
+    #[error("Expected inner rule for value")]
+    ExpectedInnerRuleForValue,
+
+    #[error("Function name missing")]
+    FunctionNameMissing,
+
+    #[error("Unexpected rule in select_list")]
+    UnexpectedRuleInSelectListOther,
+}
+
+pub fn parse_query(input: &str) -> Result<SelectQuery, ParseError> {
+    let mut pairs = SQLParser::parse(Rule::select_query, input)
+        .map_err(|e| ParseError::ParsingError(e.to_string()))?;
+    let pair = pairs.next().ok_or(ParseError::NoQueryFound)?;
 
     build_query_structure(pair)
 }
 
-fn build_query_structure(pair: Pair<Rule>) -> Result<SelectQuery, Error> {
+fn build_query_structure(pair: Pair<Rule>) -> Result<SelectQuery, ParseError> {
     let mut columns: Vec<SelectItem> = Vec::new();
     let mut table: Option<Table> = None;
     let mut where_clause: Option<Condition> = None;
@@ -70,12 +127,12 @@ fn build_query_structure(pair: Pair<Rule>) -> Result<SelectQuery, Error> {
 
     Ok(SelectQuery {
         columns,
-        table: table.ok_or_else(|| anyhow!("Table not specified"))?,
+        table: table.ok_or(ParseError::TableNotSpecified)?,
         where_clause,
     })
 }
 
-fn selected_rows_parser(pair: Pair<Rule>) -> Result<Vec<SelectItem>, Error> {
+fn selected_rows_parser(pair: Pair<Rule>) -> Result<Vec<SelectItem>, ParseError> {
     let mut selected_rows = Vec::new();
 
     for inner in pair.into_inner() {
@@ -84,48 +141,47 @@ fn selected_rows_parser(pair: Pair<Rule>) -> Result<Vec<SelectItem>, Error> {
                 let row = parse_select_item(inner)?;
                 selected_rows.push(row);
             }
-            _ => return Err(anyhow!("Unexpected rule in select_list")),
+            _ => return Err(ParseError::UnexpectedRuleInSelectListOther),
         }
     }
 
     Ok(selected_rows)
 }
 
-fn parse_select_item(pair: Pair<Rule>) -> Result<SelectItem, Error> {
-    let inner = pair
-        .into_inner()
-        .next()
-        .ok_or_else(|| anyhow!("Missing select item"))?;
+fn parse_select_item(pair: Pair<Rule>) -> Result<SelectItem, ParseError> {
+    let mut inner_pairs = pair.into_inner();
 
-    match inner.as_rule() {
-        Rule::identifier => Ok(SelectItem::Column(inner.as_str().to_string())),
-        Rule::function_call => {
-            let mut parts = inner.into_inner();
-            let function = parts
-                .next()
-                .ok_or_else(|| anyhow!("Function name missing"))?
-                .as_str()
-                .to_string();
-            let arg = parts
-                .next()
-                .ok_or_else(|| anyhow!("Function argument missing"))?
-                .as_str()
-                .to_string();
-
-            Ok(SelectItem::Function {
-                name: function,
-                argument: arg,
-            })
+    if let Some(inner) = inner_pairs.next() {
+        match inner.as_rule() {
+            Rule::identifier => Ok(SelectItem::Column(inner.as_str().to_string())),
+            Rule::function_call => {
+                let mut parts = inner.into_inner();
+                let function = parts
+                    .next()
+                    .ok_or(ParseError::FunctionNameMissing)?
+                    .as_str()
+                    .to_string();
+                let arguments = parts
+                    .map(parse_select_item)
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(SelectItem::Function {
+                    name: function,
+                    arguments,
+                })
+            }
+            Rule::star => Ok(SelectItem::Column("*".to_string())),
+            _ => Err(ParseError::UnexpectedRuleInSelectItem),
         }
-        _ => return Err(anyhow!("Unexpected rule in select_item")),
+    } else {
+        Err(ParseError::MissingSelectItem)
     }
 }
 
-fn table_parser(pair: Pair<Rule>) -> Result<Table, Error> {
+fn table_parser(pair: Pair<Rule>) -> Result<Table, ParseError> {
     let inner = pair
         .into_inner()
         .next()
-        .ok_or_else(|| anyhow!("Missing table name"))?;
+        .ok_or(ParseError::MissingTableName)?;
 
     match inner.as_rule() {
         Rule::identifier => Ok(Table::Simple(inner.as_str().to_string())),
@@ -133,14 +189,12 @@ fn table_parser(pair: Pair<Rule>) -> Result<Table, Error> {
             let subquery = build_query_structure(inner)?;
             Ok(Table::Subquery(Box::new(subquery)))
         }
-        _ => return Err(anyhow!("Unexpected rule in table")),
+        _ => Err(ParseError::UnexpectedRuleInTable),
     }
 }
 
-fn where_parser(pair: Pair<Rule>) -> Result<Condition, Error> {
-    // let mut inner_rules = condition_pair.into_inner();
-
-    for inner in pair.into_inner() { 
+fn where_parser(pair: Pair<Rule>) -> Result<Condition, ParseError> {
+    for inner in pair.into_inner() {
         match inner.as_rule() {
             Rule::WHERE => {}
             Rule::condition => {
@@ -151,42 +205,43 @@ fn where_parser(pair: Pair<Rule>) -> Result<Condition, Error> {
         }
     }
 
-    Err(anyhow!("No condition found in WHERE clause"))
-
+    Err(ParseError::NoConditionInWhereClause)
 }
 
-fn parse_condition(pair: Pair<Rule>) -> Result<Condition, Error> {
+fn parse_condition(pair: Pair<Rule>) -> Result<Condition, ParseError> {
     let mut inner_rules = pair.into_inner();
 
     let left = inner_rules
         .next()
-        .ok_or_else(|| anyhow!("Missing left operand in condition"))?
+        .ok_or(ParseError::MissingLeftOperand)?
         .as_str()
         .to_string();
 
     let operator = inner_rules
         .next()
-        .ok_or_else(|| anyhow!("Missing operator in condition"))?
+        .ok_or(ParseError::MissingOperator)?
         .as_str()
         .to_string();
 
-    let right_pair = inner_rules
-        .next()
-        .ok_or_else(|| anyhow!("Missing right operand in condition"))?;
+    let right_pair = inner_rules.next().ok_or(ParseError::MissingRightOperand)?;
     let right = parse_value(right_pair)?;
 
-    Ok(Condition { left, operator, right })
+    Ok(Condition {
+        left,
+        operator,
+        right,
+    })
 }
 
-fn parse_value(pair: Pair<Rule>) -> Result<Value, Error> {
-    let inner_pair = pair.into_inner().next().ok_or_else(|| anyhow!("Expected inner rule for value"))?;
-    
+fn parse_value(pair: Pair<Rule>) -> Result<Value, ParseError> {
+    let inner_pair = pair
+        .into_inner()
+        .next()
+        .ok_or(ParseError::ExpectedInnerRuleForValue)?;
+
     match inner_pair.as_rule() {
         Rule::number => {
-            let num = inner_pair
-                .as_str()
-                .parse::<i64>()
-                .map_err(|e| anyhow!("Invalid number: {}", e))?;
+            let num = inner_pair.as_str().parse::<i64>()?;
             Ok(Value::Number(num))
         }
         Rule::string => {
@@ -198,6 +253,6 @@ fn parse_value(pair: Pair<Rule>) -> Result<Value, Error> {
             let b = inner_pair.as_str().eq_ignore_ascii_case("true");
             Ok(Value::Boolean(b))
         }
-        _ => Err(anyhow!("Unexpected rule in value")),
+        _ => Err(ParseError::UnexpectedRuleInValue),
     }
 }

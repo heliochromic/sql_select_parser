@@ -4,8 +4,6 @@ SELECT = { "select" }
 FROM = { "from" }
 WHERE = { "where" }
 
-case_insensitive(str) = { $(str.chars().map(|c| c.to_ascii_lowercase()).collect::<String>()) }
-
 identifier = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
 number = @{ "-"? ~ ASCII_DIGIT+ }
@@ -22,11 +20,13 @@ table = { identifier | "(" ~ select_query ~ ")" }
 
 select_query = { SELECT ~ select_list ~ FROM ~ table ~ where_clause? }
 
-select_list = { "*" | select_item ~ ("," ~ select_item)* }
+select_list = { select_item ~ ("," ~ select_item)* }
 
-select_item = { function_call | identifier }
+star = { "*" }
 
-function_call = { function_name ~ "(" ~ identifier ~ ")" }
+select_item = { function_call | identifier | star }
+
+function_call = { function_name ~ "(" ~ ("*" | select_item ~ ("," ~ select_item)*)? ~ ")" }
 
 where_clause = { WHERE ~ condition }
 
