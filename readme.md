@@ -40,7 +40,7 @@ The SQL Parser CLI is a command-line tool designed to parse and analyze SQL SELE
 ## Installation
 Clone repository and make sure that all dependecies installed properly 
 ```unix
-git clone https://github.com/yourusername/sql_parser_cli.git
+git clone https://github.com/heliochromic/sql_select_parser
 cd sql_parser_cli
 ```
 
