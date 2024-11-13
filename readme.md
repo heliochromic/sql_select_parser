@@ -1,6 +1,6 @@
 # sql_select_parser
 
-[Link to creates.io](https://crates.io/crates/sql_select_parser)
+[Link to creates.io](https://crates.io/crates/sql_select_parser)    
 [Link to docs.rs](https://docs.rs/sql_select_parser/0.1.2/sql_select_parser/index.html)
 
 ## Overview
