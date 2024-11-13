@@ -1,48 +1,72 @@
+#![doc = include_str!("../docs.md")]
+
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
+/// Main module that contains rules for parser
 #[derive(Parser)]
 #[grammar = "./sql.pest"]
 pub struct SQLParser;
 
+/// Main structure for storing a SQL select query.
+/// Contains selected columns, the table, and an optional WHERE filter.
 #[derive(Debug)]
 pub struct SelectQuery {
+    /// List of columns or functions to select.
     pub columns: Vec<SelectItem>,
+    /// The table to select data from.
     pub table: Table,
+    /// Filtering conditions in WHERE, if present.
     pub where_clause: Option<Condition>,
 }
 
+/// Possible values for SQL expressions.
 #[derive(Debug)]
 pub enum Value {
+    /// A number.
     Number(i64),
+    /// A string (text).
     String(String),
+    /// A boolean (true or false).
     Boolean(bool),
 }
 
+/// A condition for where.
+/// Contains the column name, comparison operator, and the value to compare.
 #[derive(Debug)]
 pub struct Condition {
+    /// The left part of the condition, like a column name.
     pub left: String,
+    /// Comparison operator, such as `=` or `>`.
     pub operator: String,
+    /// The value to compare against.
     pub right: Value,
 }
 
+/// Types of items in select: a simple column, a function, or a star (*).
 #[derive(Debug)]
 pub enum SelectItem {
+    /// A column with a name.
     Column(String),
+    /// A function call, with a function name and arguments.
     Function {
         name: String,
         arguments: Vec<SelectItem>,
     },
 }
 
+/// The table for select, which can be a simple table or a subquery.
 #[derive(Debug)]
 pub enum Table {
+    /// A table name.
     Simple(String),
+    /// A subquery SELECT.
     Subquery(Box<SelectQuery>),
 }
 
+/// Possible errors when parsing an SQL query.
 #[derive(Debug, Error)]
 pub enum ParseError {
     #[error("Parsing error: {0}")]
@@ -97,6 +121,16 @@ pub enum ParseError {
     UnexpectedRuleInSelectListOther,
 }
 
+/// Function to parse an SQL query.
+/// Takes an SQL query as text and returns a SelectQuery or an error.
+///
+/// # Example
+///
+/// ```
+/// let query = "select name from users where age > 20";
+/// let result = parse_query(query);
+/// assert!(result.is_ok());
+/// ```
 pub fn parse_query(input: &str) -> Result<SelectQuery, ParseError> {
     let mut pairs = SQLParser::parse(Rule::select_query, input)
         .map_err(|e| ParseError::ParsingError(e.to_string()))?;
