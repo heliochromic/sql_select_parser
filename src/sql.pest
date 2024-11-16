@@ -1,35 +1,64 @@
+/// Matches any amount of whitespace (spaces, tabs, newlines).
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 
+/// Matches the `select` keyword in a query.
 SELECT = { "select" }
+
+/// Matches the `from` keyword in a query.
 FROM = { "from" }
+
+/// Matches the `where` keyword in a query.
 WHERE = { "where" }
 
+/// Matches an identifier, such as column or table names.
+/// Identifiers start with a letter or underscore and can contain alphanumeric characters and underscores.
 identifier = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
+/// Matches numeric literals, including optional negative sign.
 number = @{ "-"? ~ ASCII_DIGIT+ }
 
+/// Matches string literals enclosed in single quotes.
 string = @{ "'" ~ (!"'" ~ ANY)* ~ "'" }
 
+/// Matches boolean literals (`true` or `false`).
 boolean = @{ "true" | "false" }
 
+/// Matches operators such as `=`, `!=`, `>=`, `<=`, `<`, and `>`.
 operator = @{ "!=" | ">=" | "<=" | "<" | ">" | "=" }
 
+/// Matches the name of a function, consisting of alphanumeric characters and underscores.
 function_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
+/// Matches a table name or a subquery enclosed in parentheses.
 table = { identifier | "(" ~ select_query ~ ")" }
 
+/// Matches an entire `select` query.
+/// Consists of a `select` keyword, a list of columns, a `from` clause, and an optional `where` clause.
 select_query = { SELECT ~ select_list ~ FROM ~ table ~ where_clause? }
 
+/// Matches a list of items in the `select` clause.
+/// Items are separated by commas.
 select_list = { select_item ~ ("," ~ select_item)* }
 
+/// Matches the `*` character used to select all columns.
 star = { "*" }
 
+/// Matches a single item in the `select` clause.
+/// Items can be columns, function calls, or the `*` character.
 select_item = { function_call | identifier | star }
 
+/// Matches a function call with a name and optional arguments.
+/// Arguments can be columns, other function calls, or the `*` character.
 function_call = { function_name ~ "(" ~ ("*" | select_item ~ ("," ~ select_item)*)? ~ ")" }
 
+/// Matches the `where` clause of a query.
+/// Consists of the `where` keyword followed by a condition.
 where_clause = { WHERE ~ condition }
 
+/// Matches a condition in the `where` clause.
+/// Consists of an identifier, an operator, and a value.
 condition = { identifier ~ operator ~ value }
 
+/// Matches a value in the query.
+/// Values can be strings, numbers, or boolean literals.
 value = { string | number | boolean }
