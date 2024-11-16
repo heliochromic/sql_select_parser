@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "sql_select_parser"
-version = "0.1.2"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "clap",
